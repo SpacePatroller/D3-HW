@@ -1,8 +1,5 @@
 // @TODO: YOUR CODE HERE!
 
-
-
-
 // declare height and width
 var svgWidth = 960;
 var svgHeight = 500;
@@ -19,8 +16,6 @@ var margin = {
 var width = svgWidth - margin.left - margin.right;
 var height = svgHeight - margin.top - margin.bottom;
 
-
-
 // create svg wrapper 
 var svg = d3
     .select("#scatter")
@@ -28,7 +23,6 @@ var svg = d3
     .attr("width", svgWidth)
     .attr("height", svgHeight);
 
-console.log("test")
 // Append an SVG group
 var chartGroup = svg.append("g")
     .attr("transform", `translate(${margin.left}, ${margin.top})`);
@@ -36,30 +30,28 @@ var chartGroup = svg.append("g")
 d3.csv("assets/data/data.csv")
     .then(function (smokerData) {
 
-        console.log(smokerData);
-
-
-        // parse data and return to smokerData
+        console.log(smokerData)
+        // parse data and return to smokerData object
         smokerData.forEach(data => {
             data.smokes = +data.smokes;
             data.age = +data.age;
+            // console.log(`Smokers "${data.smokes}"`);
+            // console.log(`Age "${data.age}"`)
         });
 
-
         // create scales
-        var xTimeScale = d3.scaleTime()
+        var xLinearScale = d3.scaleLinear()
             .domain(d3.extent(smokerData, d => d.age))
             .range([0, width]);
 
+            // why am I not able to use d3.extent here? dosent it just return the min and max value from the array?
+            // when I tried using it it made all my circles line up in one straight line at the top. 
         var yLinearScale = d3.scaleLinear()
             .domain([0, d3.max(smokerData, d => d.smokes)])
             .range([height, 0]);
 
-
-        var xAxis = d3.axisBottom(xTimeScale);
+        var xAxis = d3.axisBottom(xLinearScale);
         var yAxis = d3.axisLeft(yLinearScale);
-
-
 
         // append axes
         chartGroup.append("g")
@@ -68,73 +60,66 @@ d3.csv("assets/data/data.csv")
             .call(xAxis);
 
         chartGroup.append("g")
-            .attr("stroke", "orange")
+            .attr("stroke", "blue")
             .call(yAxis);
-            
 
-        // line generator
-        var line = d3.line()
-            .x(d => xTimeScale(d.age))
-            .y(d => yLinearScale(d.smokes));
-
-
+        var circlesGroup = chartGroup.append("g")
+            .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
         // append circles
-        var circlesGroup = chartGroup.selectAll("circle")
+        var circles = circlesGroup.selectAll("circle")
             .data(smokerData)
             .enter()
             .append("circle")
-            .attr("cx", d => xTimeScale(d.age))
+            .attr("cx", d => xLinearScale(d.age))
             .attr("cy", d => yLinearScale(d.smokes))
-            .attr("r", "10")
-            .attr("fill", "gold")
+            .attr("r", "13")
+            .attr("fill", "#abbddb")
+            .style("opacity", .4)
             .attr("stroke-width", "1")
             .attr("stroke", "black");
+
+
+        // text is showing up in top right corner ????/
+        // Add Text Labels
+        var circlesText = circles.select("text")
+            .data(smokerData)
+            .enter()
+            .append("text")
+            .text(function (d) {
+                return d.abbr;
+            })
+            .attr("x", d => xLinearScale(d.age - .12))
+            .attr("y", d => yLinearScale(d.smokes - .13))
+            .attr("font_family", "sans-serif")  // Font type
+            .attr("font-size", "11px")  // Font size
+            .attr("fill", "black");   // Font color
 
 
         // Create group for  2 x- axis labels
         var labelsGroup = chartGroup.append("g")
             .attr("transform", `translate(${width / 2}, ${height + 20})`);
 
-        // var hairLengthLabel = labelsGroup.append("text")
-        //     .attr("x", 0)
-        //     .attr("y", 20)
-        //     .attr("value", "hair_length") // value to grab for event listener
-        //     .classed("active", true)
-        //     .text("Hair Metal Ban Hair Length (inches)");
 
-        // var albumsLabel = labelsGroup.append("text")
-        //     .attr("x", 0)
-        //     .attr("y", 40)
-        //     .attr("value", "num_albums") // value to grab for event listener
-        //     .classed("inactive", true)
-        //     .text("# of Albums Released");
+        var smokersAge = labelsGroup.append("text")
+            .attr("x", 0)
+            .attr("y", 20)
+            .attr("value", "age") // value to grab for event listener
+            .classed("active", true)
+            .text("Smokers Age");
 
-
-
-
-
+        chartGroup.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .attr("value", "smokes") // value to grab for event listener
+            .classed("active", true)
+            .text("Smokes");
 
 
-        // Initialize Tooltip
-        var toolTip = d3.tip()
-            .attr("class", "tooltip")
-            .offset([80, -60])
-            .html(function (d) {
-                return (`<strong>${(d.state)}`);
-            });
 
-        // Step 2: Create the tooltip in chartGroup.
-        chartGroup.call(toolTip);
 
-        // Step 3: Create "mouseover" event listener to display tooltip
-        circlesGroup.on("mouseover", function (d) {
-            toolTip.show(d, this);
-        })
-            // Step 4: Create "mouseout" event listener to hide tooltip
-            .on("mouseout", function (d) {
-                toolTip.hide(d);
-            });
     });
 
 
